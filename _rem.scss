@@ -41,19 +41,46 @@ $rem-px-only: false !default;
   }
 }
 
-@mixin rem($properties, $values...) {
-  @if type-of($properties) == "map" {
-    @each $property in map-keys($properties) {
-      @include rem($property, map-get($properties, $property));
+@function parseInt($n) {
+    @return $n / ($n * 0 + 1);
+}
+
+@mixin rem($property, $values, $prefix: false) {
+    $px: ();
+    $rem: ();
+
+    @each $value in $values {
+
+        @if $value == 0 or $value == auto or unit($value) == "%" {
+            $px: append($px, $value);
+            $rem: append($rem, $value);
+        } @else {
+            $unit: unit($value);
+            $val: parseInt($value);
+
+            @if $unit == "px" {
+                $px: append($px, $value);
+                $rem: append($rem, ($val / 16 + rem));
+            }
+
+            @if $unit == "rem" {
+                $px: append($px, ($val * 16 + px));
+                $rem: append($rem, $value);
+            }
+        }
     }
-  } @else {
-    @each $property in $properties {
-      @if $rem-fallback or $rem-px-only {
-        #{$property}: rem-convert(px, $values...);
-      }
-      @if not $rem-px-only {
-        #{$property}: rem-convert(rem, $values...);
-      }
+
+    @if $px == $rem {
+        #{$property}: $px;
+    } @else if $prefix == true {
+        #{-moz- + $property}: $px;
+        #{-moz- +$property}: $rem;
+        #{-webkit- +$property}: $px;
+        #{-webkit- +$property}: $rem;
+        #{$property}: $px;
+        #{$property}: $rem;
+    } @else {
+        #{$property}: $px;
+        #{$property}: $rem;
     }
-  }
 }
